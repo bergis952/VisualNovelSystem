@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: 00182c04c5e937a45b235959951ba8f0
+  productGUID: 8403012ad2408a648a776394bab95f30
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -921,10 +921,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: f277a4a9-c28d-4ac4-a387-949f575dafb4
+  cloudProjectId: e654ea8f-fb2e-4fd2-b51e-0b3a95554ac0
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: VisualNovelSystem
+  projectName: VisualNovelSystem 2025-09-18_12-30-45
   organizationId: bfergus1
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
