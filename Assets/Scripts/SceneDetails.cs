@@ -9,16 +9,10 @@ public class DialogueLine
     [TextArea(3,10)]
     public string line;
 }
-[System.Serializable]
-public class Dialogue
-{
-    public List<DialogueLine> dialogueLines = new List<DialogueLine>();
-}
-
 
 public class SceneDetails : MonoBehaviour
 {
-    public Dialogue dialogue;
+    public List<DialogueLine> dialogueLines = new List<DialogueLine>();
 //This is just here for testing purposes at the moment, we will need more serious dialogue triggers later on.
     void Start()
     {

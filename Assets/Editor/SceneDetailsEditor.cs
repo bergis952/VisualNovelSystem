@@ -8,7 +8,7 @@ public class SceneDetaisEditor : Editor
     {
         serializedObject.Update();
 
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("dialogue"), true);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("dialogueLines"), true);
 
         serializedObject.ApplyModifiedProperties();
     }
