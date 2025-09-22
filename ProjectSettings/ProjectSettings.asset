@@ -12,7 +12,7 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: DefaultCompany
+  companyName: MugMagicians
   productName: VisualNovelSystem
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
@@ -822,7 +822,8 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Standalone: INK_RUNTIME;INK_EDITOR
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -919,7 +920,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: e654ea8f-fb2e-4fd2-b51e-0b3a95554ac0
   framebufferDepthMemorylessMode: 0
