@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.InputSystem;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,57 +11,57 @@ public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance;
     [Header("UI Elements")]
-    public Text nameText;
-    public Text dialogueText;
+    public TMP_Text nameText;
+    public TMP_Text dialogueText;
+    public Image rightPortrait;
+//Temporary Demo stuff
+    public Sprite standard;
+    public Sprite happy;
+    public Sprite angry;
+
     [Header("Text Preferances")]
     public float typingSpeed = 0.005f;
     [Header("Ink Stuff")]
     public TextAsset inkJSONAsset;
-    private Queue<DialogueLine> lines;
-    private SceneDetails details;
 
     private Story inkStory;
 
-    private enum DIALOGUESTATES
-    {
+    private enum DIALOGUESTATES{
         Writing,//Currently typing out the text
         Ready,//Done typing, waiting for the player's next input
         Done,//Done typing, no more lines in the scene
     }
     private DIALOGUESTATES dialogueState;
-    private InputAction advance;
+    private InputSystem_Actions actions;
 
     void Awake()
     {
-        if (Instance == null)
-        {
+        if (Instance == null){
             Instance = this;
         }
+        else {
+            Destroy(gameObject);
+        }
+    
 
-        advance = new InputAction(binding: "<Keyboard>/enter");//Sets up are "go on" input. Currently only enter.
-        advance.performed += ctx => PlayNextLine();
-        advance.Enable();
+        actions = new InputSystem_Actions();
+
+        actions.Dialogue.Advance.performed += ctx => PlayNextLine();
+        TriggerDialogue();
+    }
+    void OnEnable()
+    {
+        actions.Dialogue.Enable();
     }
 
-    public void TriggerDialogue(GameObject scene)
+    void OnDisable()
     {
-        details = scene.GetComponent<SceneDetails>(); //The manager yoinks the details from the scene obj we are passing.
-        if (details == null)
-        {
-            Debug.LogWarning("No SceneDetails found on " + scene.name);
-            return;
-        }
-        if (details.dialogueLines == null)
-        {
-            Debug.LogWarning("No Dialogue found on " + scene.name);
-            return;
-        }
-        
-        foreach (DialogueLine dialogueLine in details.dialogueLines) //And then uses those details to generate text
-        {
-            inkStory = new Story(inkJSONAsset.text);
-        }
-        dialogueState = DIALOGUESTATES.Ready;// Telling the manager that are lines are all ready
+        actions.Dialogue.Disable();
+    }
+    public void TriggerDialogue()
+    {
+        inkStory = new Story(inkJSONAsset.text);
+        dialogueState = DIALOGUESTATES.Ready;
         PlayNextLine();
     }
     void PlayNextLine()
@@ -76,7 +77,8 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    void FetchCharacterDetails(){
+    void FetchCharacterDetails()
+    {
         nameText.text = "";
 
         foreach (string inkTag in inkStory.currentTags){
@@ -88,14 +90,31 @@ public class DialogueManager : MonoBehaviour
             if (key == "character"){
                 nameText.text = value;
             }
+
+            else if (key == "portrait"){
+                SetPortrait(value);
+            }
+        }
+    }
+
+    void SetPortrait(string pKey)
+    {
+        if (pKey == "happy"){
+            rightPortrait.sprite = happy;
+        }
+        else if (pKey == "angry"){
+            rightPortrait.sprite = angry;
+        }
+        else 
+        {
+            rightPortrait.sprite = standard;
         }
     }
 
     IEnumerator TypeSentence(string line)
     {
         dialogueText.text = "";
-        foreach (char letter in line.ToCharArray())
-        {
+        foreach (char letter in line.ToCharArray()){
             dialogueText.text += letter;
             yield return new WaitForSeconds(typingSpeed);
         }
