@@ -124,7 +124,23 @@ public class DialogueManager : MonoBehaviour
 
                 var bText = button.GetComponentInChildren<TMP_Text>();
                 bText.text = choice.text; 
+
+                button.GetComponent<Button>().onClick.AddListener(() => OnClickButton(choice));
             }
+        }
+    }
+
+    public void OnClickButton(Choice choice)
+    {
+        inkStory.ChooseChoiceIndex(choice.index);
+        if (buttonContainer != null)
+        {
+            foreach (var btn in buttonContainer.GetComponentsInChildren<Button>())
+            {
+                Destroy(btn.gameObject);
+            }
+            dialogueState = DIALOGUESTATES.Ready;
+            PlayNextLine();
         }
     }
 
@@ -143,7 +159,6 @@ public class DialogueManager : MonoBehaviour
         else
         {
             dialogueState = DIALOGUESTATES.Ready;
-
         }
     }
 }
