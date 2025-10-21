@@ -10,17 +10,24 @@ using Ink.UnityIntegration;
 public class DialogueManager : MonoBehaviour
 {
     public static DialogueManager Instance;
+    public GameObject[] charactersInScene;
     [Header("UI Elements")]
     public TMP_Text nameText;
     public TMP_Text dialogueText;
-    public Image rightPortrait;
+    public Canvas uiCanvas;
+
+    public Transform leftCharacterLocation;
+    public Transform centerCharacterLocation;
+    public Transform rightCharacterLocation;
+
     public GameObject buttonPrefab;
     public VerticalLayoutGroup buttonContainer;
-//Temporary Demo stuff
+    //Temporary Demo stuff
     public Sprite standard;
     public Sprite happy;
     public Sprite angry;
-//End temp stuff
+    public float leftOffset;
+    //End temp stuff
     [Header("Text Preferances")]
     public float typingSpeed = 0.01f;
     [Header("Ink Stuff")]
@@ -34,6 +41,8 @@ public class DialogueManager : MonoBehaviour
         Ready,//Done typing, waiting for the player's next input
         Done,//Done typing, no more lines in the scene
     }
+
+    
     private DIALOGUESTATES dialogueState;
     private InputSystem_Actions actions;
 
@@ -54,17 +63,19 @@ public class DialogueManager : MonoBehaviour
     {
         actions.Dialogue.Enable();
     }
-
     void OnDisable()
     {
         actions.Dialogue.Disable();
     }
+
+//-------------------- CORE DIALOGUE LOOP --------------------
     public void TriggerDialogue()
     {
-        inkStory = new Story(inkJSONAsset.text);
+        inkStory = new Story(inkJSONAsset.text);//Converts the Inky JSON into "inkStory" which is the variable that is used for all story-related stuff
         dialogueState = DIALOGUESTATES.Ready;
         PlayNextLine();
     }
+
     void PlayNextLine()
     {
         if (dialogueState == DIALOGUESTATES.Ready && inkStory.canContinue){
@@ -76,38 +87,48 @@ public class DialogueManager : MonoBehaviour
 
     void FetchCharacterDetails()
     {
+        //clears our text field of the previous line's information
         nameText.text = "";
+        string characterName = "";
 
         foreach (string inkTag in inkStory.currentTags){
-
             string[] split = inkTag.Split(":");
+            //Ink tags work like: "character: Mario"
+            //                    "effect: Spawn"
+            //So we split them into an array of [character:Mario, effect:Spawn]
             string key = split[0].Trim();
             string value = split[1].Trim();
 
-            if (key == "character"){
-                nameText.text = value;
+            if (key == "character"){//This one is the easiest, so I didn't give it its own function.
+                characterName = value;
+                nameText.text = characterName;
             }
-
-            else if (key == "portrait"){
+            else if (key == "character_effect"){
+                TriggerCharacterEffect(value, characterName);
+            }
+            else if (key == "expression" && characterName != ""){//changes the portrait shown based on the character tag and expresion tag
                 SetPortrait(value);
             }
         }
     }
 
-    void SetPortrait(string pKey)
+    IEnumerator TypeSentence(string line)
     {
-        if (pKey == "happy"){
-            rightPortrait.sprite = happy;
+        dialogueState = DIALOGUESTATES.Writing;
+        dialogueText.text = "";
+        foreach (char letter in line.ToCharArray()){
+            dialogueText.text += letter;
+            yield return new WaitForSeconds(typingSpeed);
         }
-        else if (pKey == "angry"){
-            rightPortrait.sprite = angry;
+        if (inkStory.currentChoices.Count >= 1){//Puts us into a choice state if needed.
+            dialogueState = DIALOGUESTATES.Waiting;
+            DisplayChoices();
         }
-        else 
+        else
         {
-            rightPortrait.sprite = standard;
+            dialogueState = DIALOGUESTATES.Ready;
         }
     }
-
     void DisplayChoices()
     {
         if (buttonContainer.GetComponentsInChildren<Button>().Length > 0)
@@ -129,7 +150,7 @@ public class DialogueManager : MonoBehaviour
             }
         }
     }
-
+//-------------------- HANDLING PLAYER INPUT --------------------
     public void OnClickButton(Choice choice)
     {
         inkStory.ChooseChoiceIndex(choice.index);
@@ -143,22 +164,99 @@ public class DialogueManager : MonoBehaviour
             PlayNextLine();
         }
     }
-
-    IEnumerator TypeSentence(string line)
+//-------------------- VISUALS AND EFFECTS USING INK TAGS --------------------
+    void TriggerCharacterEffect(string effect, string character)
     {
-        dialogueState = DIALOGUESTATES.Writing;
-        dialogueText.text = "";
-        foreach (char letter in line.ToCharArray()){
-            dialogueText.text += letter;
-            yield return new WaitForSeconds(typingSpeed);
-        }
-        if (inkStory.currentChoices.Count >= 1){
-            dialogueState = DIALOGUESTATES.Waiting;
-            DisplayChoices();
-        }
-        else
+        GameObject characterPrefab = System.Array.Find(charactersInScene, obj => obj.GetComponent<CharacterDetails>().characterName == character);
+        
+        switch (effect)
         {
-            dialogueState = DIALOGUESTATES.Ready;
+        //Character appears in position without moving
+            case "appear_left":
+                SpawnCharacter(characterPrefab, leftCharacterLocation);
+                break;
+            case "appear_center":
+                break;
+            case "appear_right":
+                break;
+        //Character sprite enters from the left side of the screen and goes to one of three positions.
+            case "enter_left_to_left":
+                EnterCharacter(characterPrefab, leftCharacterLocation, "left");
+                break;
+            case "enter_left_to_center":
+                break;
+            case "enter_left_to_right":
+                break;
+        //Character sprite enters from the right side of the screen and goes to one of three positions.
+            case "enter_right_to_left":
+                break;
+            case "enter_right_to_center":
+                break;
+            case "enter_right_to_right":
+                break;
+        //Character moves to the noted position
+            case "move_to_left":
+                break;
+            case "move_to_center":
+                break;
+            case "move_to_right":
+                break;
+        //Character sprite exits in the noted direction.
+            case "exit_left":
+                break;
+            case "exit_right":
+                break;
+        //special effects
+            case "character_shake":
+                break;
+        }
+    }
+    void SetPortrait(string pKey)
+    {
+        if (pKey == "happy"){
+            //rightCharacterLocation.sprite = happy;
+        }
+        else if (pKey == "angry"){
+            //rightCharacterLocation.sprite = angry;
+        }
+        else 
+        {
+            //rightCharacterLocation.sprite = standard;
+        }
+    }
+
+    void SpawnCharacter(GameObject character, Transform spot)
+    {
+        if (character != null)
+        {
+            GameObject newChar = Instantiate(character, spot);
+            RectTransform rect = newChar.GetComponent<RectTransform>();
+
+            rect.anchorMin = new Vector2(0.5f, 0f); 
+            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot     = new Vector2(0.5f, 0f); 
+            rect.anchoredPosition = Vector2.zero; 
+            rect.localScale = Vector3.one;
+        }
+    }
+    void EnterCharacter(GameObject character, Transform spot, String start)
+    {
+        if (character != null)
+        {
+            GameObject newChar = Instantiate(character, spot);
+            RectTransform rect = newChar.GetComponent<RectTransform>();
+
+            switch (start){
+                case "left":
+                    Vector3 offset = new Vector3(leftOffset,0,0);
+                    rect.anchoredPosition = offset;
+                    break;
+            }
+             
+            rect.anchorMin = new Vector2(0.5f, 0f); 
+            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot     = new Vector2(0.5f, 0f); 
+            rect.localScale = Vector3.one;
         }
     }
 }
