@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Ink.Runtime;
 using Ink.UnityIntegration;
+using DG.Tweening;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -15,18 +16,16 @@ public class DialogueManager : MonoBehaviour
     public TMP_Text nameText;
     public TMP_Text dialogueText;
     public Canvas uiCanvas;
+    public Canvas charCanvas;
 
+    public Transform farLeftCharacterLocation;
     public Transform leftCharacterLocation;
     public Transform centerCharacterLocation;
     public Transform rightCharacterLocation;
+    public Transform farRightCharacterLocation;
 
     public GameObject buttonPrefab;
     public VerticalLayoutGroup buttonContainer;
-    //Temporary Demo stuff
-    public Sprite standard;
-    public Sprite happy;
-    public Sprite angry;
-    public float leftOffset;
     //End temp stuff
     [Header("Text Preferances")]
     public float typingSpeed = 0.01f;
@@ -103,11 +102,11 @@ public class DialogueManager : MonoBehaviour
                 characterName = value;
                 nameText.text = characterName;
             }
-            else if (key == "character_effect"){
-                TriggerCharacterEffect(value, characterName);
+            else if (key == "action"){
+                TriggerAction(value, characterName);
             }
-            else if (key == "expression" && characterName != ""){//changes the portrait shown based on the character tag and expresion tag
-                SetPortrait(value);
+            else if (key == "expression" && characterName != ""){//changes the portrait shown based on the character tag and expression tag
+                SetPortrait(value, characterName);
             }
         }
     }
@@ -165,98 +164,58 @@ public class DialogueManager : MonoBehaviour
         }
     }
 //-------------------- VISUALS AND EFFECTS USING INK TAGS --------------------
-    void TriggerCharacterEffect(string effect, string character)
+    void TriggerAction(string value, string character)
+    {
+        
+        string[] parts = value.Split(' ');
+        //We're once again splitting a bit from Inky.
+        //The action key gives us a long string, such as "enter far_left right 1.2" (enter FROM far left TO right at speed 1.2) which we split, giving us:             
+        string moveType = parts[0].Trim();      // moveType === "enter"
+        string from = parts [1].Trim();         //from === "far_left"
+        string to = parts [2].Trim();           //to === "right"
+        float speed = float.Parse(parts[3]);   //speed = 1.2f
+
+        GameObject characterPrefab = System.Array.Find(charactersInScene, obj => obj.GetComponent<CharacterDetails>().characterName == character);
+        CharacterMove(characterPrefab, from, to, speed);
+    }
+
+    void CharacterMove(GameObject characterPrefab, string from, string to, float speed){
+        Transform fromSpot = GetTransformByKeyword(from);
+        Transform toSpot = GetTransformByKeyword(to);
+        GameObject characterInstance = GameObject.Find(characterPrefab.name + "(Clone)");
+
+        //Either finds our character in the scene or creates them at the designated (from) spot
+        if (characterInstance == null){
+            characterInstance = Instantiate(characterPrefab, charCanvas.transform, false);
+            characterInstance.name = characterPrefab.name + "(Clone)";
+        }
+        RectTransform rect = characterInstance.GetComponent<RectTransform>();
+        RectTransform fromRect = fromSpot.GetComponent<RectTransform>();
+        RectTransform toRect = toSpot.GetComponent<RectTransform>();
+
+        rect.anchoredPosition = fromRect.anchoredPosition;
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+
+        //Moves the character to the desired location
+        rect.DOAnchorPos(toRect.anchoredPosition, speed).SetEase(Ease.InOutCubic);
+    }
+    void SetPortrait(string expression, string character)
     {
         GameObject characterPrefab = System.Array.Find(charactersInScene, obj => obj.GetComponent<CharacterDetails>().characterName == character);
-        
-        switch (effect)
-        {
-        //Character appears in position without moving
-            case "appear_left":
-                SpawnCharacter(characterPrefab, leftCharacterLocation);
-                break;
-            case "appear_center":
-                break;
-            case "appear_right":
-                break;
-        //Character sprite enters from the left side of the screen and goes to one of three positions.
-            case "enter_left_to_left":
-                EnterCharacter(characterPrefab, leftCharacterLocation, "left");
-                break;
-            case "enter_left_to_center":
-                break;
-            case "enter_left_to_right":
-                break;
-        //Character sprite enters from the right side of the screen and goes to one of three positions.
-            case "enter_right_to_left":
-                break;
-            case "enter_right_to_center":
-                break;
-            case "enter_right_to_right":
-                break;
-        //Character moves to the noted position
-            case "move_to_left":
-                break;
-            case "move_to_center":
-                break;
-            case "move_to_right":
-                break;
-        //Character sprite exits in the noted direction.
-            case "exit_left":
-                break;
-            case "exit_right":
-                break;
-        //special effects
-            case "character_shake":
-                break;
-        }
-    }
-    void SetPortrait(string pKey)
-    {
-        if (pKey == "happy"){
-            //rightCharacterLocation.sprite = happy;
-        }
-        else if (pKey == "angry"){
-            //rightCharacterLocation.sprite = angry;
-        }
-        else 
-        {
-            //rightCharacterLocation.sprite = standard;
-        }
-    }
+        GameObject characterInstance = GameObject.Find(characterPrefab.name + "(Clone)");
 
-    void SpawnCharacter(GameObject character, Transform spot)
-    {
-        if (character != null)
-        {
-            GameObject newChar = Instantiate(character, spot);
-            RectTransform rect = newChar.GetComponent<RectTransform>();
-
-            rect.anchorMin = new Vector2(0.5f, 0f); 
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot     = new Vector2(0.5f, 0f); 
-            rect.anchoredPosition = Vector2.zero; 
-            rect.localScale = Vector3.one;
-        }
+        characterInstance.GetComponent<Animator>().SetTrigger(expression);
     }
-    void EnterCharacter(GameObject character, Transform spot, String start)
+    Transform GetTransformByKeyword(string keyword)
     {
-        if (character != null)
-        {
-            GameObject newChar = Instantiate(character, spot);
-            RectTransform rect = newChar.GetComponent<RectTransform>();
-
-            switch (start){
-                case "left":
-                    Vector3 offset = new Vector3(leftOffset,0,0);
-                    rect.anchoredPosition = offset;
-                    break;
-            }
-             
-            rect.anchorMin = new Vector2(0.5f, 0f); 
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot     = new Vector2(0.5f, 0f); 
-            rect.localScale = Vector3.one;
+        switch (keyword.ToLower()) {
+            case "left": return leftCharacterLocation;
+            case "far_left": return farLeftCharacterLocation;
+            case "center": return centerCharacterLocation;
+            case "right": return rightCharacterLocation;
+            case "far_right": return farRightCharacterLocation;
+            default: return null;
         }
     }
 }
